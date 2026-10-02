@@ -1,0 +1,33 @@
+scenarios:
+  - name: "windows guest kernel crash (BSOD)"
+    scenario: windows_guest_crash
+    parameters:
+      # --- target (fail closed: both are required, neither has a default) ---
+      namespace: windows-chaos
+      vm_name: windows-chaos-vm           # exact name only, no regex, no label_selector
+      # chaos.openshift.io/disposable=true is always required on the VM or VMI
+      # and cannot be disabled here. required_labels adds further constraints.
+      required_labels:
+        chaos.openshift.io/target: windows
+
+      # --- in-guest access (see scenarios/kubevirt/windows-chaos/) ---
+      ssh_user: Administrator
+      ssh_identity_file: ""               # optional, passed to virtctl --identity-file
+      ssh_connect_timeout: 10
+
+      # --- in-guest scripts, staged in the image by crash/prepare.ps1 ---
+      crash_command: 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File C:\chaos\crash.ps1'
+      collect_dump_command: 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File C:\chaos\collect-dump.ps1'
+      health_check_command: 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File C:\chaos\check.ps1'
+      stage_dir: 'C:\chaos\artifacts'
+
+      # --- timings ---
+      crash_detect_timeout: 120           # guest must stop answering within this
+      expected_recovery_time: 300         # guest must answer again within this
+      poll_interval: 5
+      clock_skew_tolerance: 120           # allowed guest/runner clock skew on the bugcheck timestamp
+
+      # --- evidence ---
+      collect_dump: true
+      artifacts_dir: /tmp/krkn-windows-guest-crash   # <artifacts_dir>/<run_uuid>/<vm_name>/
+      cleanup: true                       # remove stage_dir from the guest when done

@@ -64,6 +64,11 @@ kraken:
                - scenarios/openshift/virt_network.yaml
        -  vmi_outage:  # Also supports legacy name: kubevirt_vm_outage
               - scenarios/kubevirt/vmi-outage.yaml
+       # Bugchecks the Windows kernel of one disposable VM. Commented out on
+       # purpose: it needs the prepared fixture in scenarios/kubevirt/windows-chaos/
+       # and only runs against a VM labelled chaos.openshift.io/disposable=true.
+       # - windows_guest_crash:
+       #       - scenarios/kubevirt/windows-guest-crash.yaml
        - http_load_scenarios:
               - scenarios/kube/http_load_scenario.yml
 

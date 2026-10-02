@@ -1,0 +1,104 @@
+# Disposable Windows VM fixture for the `windows_guest_crash` scenario.
+#
+# This VM exists to be bugchecked. Do not reuse it for anything else, and do
+# not copy the chaos.openshift.io labels onto a VM you care about: they are the
+# opt-in gate the scenario checks before it crashes a guest.
+#
+# Before applying, replace:
+#   - the DataSource name/namespace with the Windows golden image in your cluster
+#   - the sysprep ConfigMap with one that enables OpenSSH and runs prepare.ps1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: windows-chaos
+  labels:
+    chaos.openshift.io/disposable: "true"
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-chaos-vm
+  namespace: windows-chaos
+  labels:
+    chaos.openshift.io/target: windows
+    chaos.openshift.io/disposable: "true"
+spec:
+  # Always: the guest reboots itself after the bugcheck and the VMI must stay
+  # the same object across that reboot. A VMI that gets recreated fails the
+  # scenario, because that is a VM-level restart rather than a guest bugcheck.
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: windows-chaos-vm-rootdisk
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: win2k22            # replace with your Windows golden image
+          namespace: openshift-virtualization-os-images
+        storage:
+          resources:
+            requests:
+              # Must hold the OS plus the crash dump. A kernel dump is roughly
+              # the size of the kernel-mode memory in use; budget generously.
+              storage: 120Gi
+  template:
+    metadata:
+      labels:
+        chaos.openshift.io/target: windows
+        chaos.openshift.io/disposable: "true"
+        kubevirt.io/domain: windows-chaos-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: sata
+            - name: sysprep
+              cdrom:
+                bus: sata
+          interfaces:
+            - name: default
+              masquerade: {}
+        features:
+          acpi: {}
+          apic: {}
+          # Hyper-V enlightenments: keep the guest's own crash reporting on so
+          # the bugcheck is visible from the host side too.
+          hyperv:
+            relaxed: {}
+            vapic: {}
+            spinlocks:
+              spinlocks: 8191
+            vpindex: {}
+            synic: {}
+            synictimer:
+              direct: {}
+            frequencies: {}
+            reenlightenment: {}
+            tlbflush: {}
+            ipi: {}
+            runtime: {}
+            reset: {}
+      # The guest needs time to write the dump and reboot; do not let the
+      # eviction/termination path cut that short.
+      terminationGracePeriodSeconds: 3600
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: windows-chaos-vm-rootdisk
+        - name: sysprep
+          sysprep:
+            configMap:
+              # Must install OpenSSH Server, authorize the key used by
+              # `virtctl ssh`, copy crash/ and recovery/ to C:\chaos and run
+              # crash/prepare.ps1 once.
+              name: windows-chaos-sysprep
