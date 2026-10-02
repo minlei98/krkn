@@ -59,7 +59,10 @@ relaxed from the scenario config:
   RFC 1123 name, so a regex cannot widen the target
 - `label_selector` is rejected outright — no fan-out
 - the VM or its VMI carries `chaos.openshift.io/disposable: "true"`
-- any additional `required_labels` match exactly
+- `required_labels` match exactly; by default that means
+  `chaos.openshift.io/target: windows` **and**
+  `chaos.openshift.io/test: windows-guest-crash`, so a VM staged for some
+  other chaos test is not a valid target just by being a disposable Windows box
 
 Only use this against a VM in an isolated test cluster, and do not copy the
 `chaos.openshift.io` labels onto a VM you care about.

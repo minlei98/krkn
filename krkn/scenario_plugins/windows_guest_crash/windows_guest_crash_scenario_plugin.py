@@ -70,8 +70,14 @@ from krkn.scenario_plugins.abstract_scenario_plugin import AbstractScenarioPlugi
 DISPOSABLE_LABEL = "chaos.openshift.io/disposable"
 DISPOSABLE_LABEL_VALUE = "true"
 
-# Default additional labels, overridable through `required_labels`.
-DEFAULT_REQUIRED_LABELS = {"chaos.openshift.io/target": "windows"}
+# Default additional labels, overridable through `required_labels`. The `test`
+# label narrows the target to a VM approved for *this* experiment, so a VM
+# staged for some other chaos test is not a valid target just by being a
+# disposable Windows box.
+DEFAULT_REQUIRED_LABELS = {
+    "chaos.openshift.io/target": "windows",
+    "chaos.openshift.io/test": "windows-guest-crash",
+}
 
 # RFC 1123 label: also rejects the regex metacharacters that would turn an
 # exact target name into a fan-out.

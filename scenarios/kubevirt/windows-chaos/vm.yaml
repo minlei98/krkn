@@ -23,6 +23,9 @@ metadata:
   labels:
     chaos.openshift.io/target: windows
     chaos.openshift.io/disposable: "true"
+    # Approves this VM for the windows_guest_crash experiment specifically,
+    # so a VM staged for some other chaos test cannot be picked up by it.
+    chaos.openshift.io/test: windows-guest-crash
 spec:
   # Always: the guest reboots itself after the bugcheck and the VMI must stay
   # the same object across that reboot. A VMI that gets recreated fails the
@@ -47,6 +50,7 @@ spec:
       labels:
         chaos.openshift.io/target: windows
         chaos.openshift.io/disposable: "true"
+        chaos.openshift.io/test: windows-guest-crash
         kubevirt.io/domain: windows-chaos-vm
     spec:
       domain:

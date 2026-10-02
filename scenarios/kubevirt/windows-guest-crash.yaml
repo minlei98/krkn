@@ -9,6 +9,7 @@ scenarios:
       # and cannot be disabled here. required_labels adds further constraints.
       required_labels:
         chaos.openshift.io/target: windows
+        chaos.openshift.io/test: windows-guest-crash
 
       # --- in-guest access (see scenarios/kubevirt/windows-chaos/) ---
       ssh_user: Administrator

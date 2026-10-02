@@ -135,6 +135,7 @@ class TestWindowsGuestCrashScenarioPlugin(unittest.TestCase):
                 "labels": {
                     "chaos.openshift.io/target": "windows",
                     "chaos.openshift.io/disposable": "true",
+                    "chaos.openshift.io/test": "windows-guest-crash",
                 },
             },
             "status": {"phase": "Running"},
@@ -226,6 +227,17 @@ class TestWindowsGuestCrashScenarioPlugin(unittest.TestCase):
         status, _ = self.execute()
         self.assertFailed(status)
 
+    def test_requires_the_approved_test_label_by_default(self):
+        del self.vmi["metadata"]["labels"]["chaos.openshift.io/test"]
+        status, guest = self.execute()
+        self.assertFailed(status)
+        self.assertEqual([], guest.commands)
+
+    def test_rejects_a_vm_approved_for_a_different_test(self):
+        self.vmi["metadata"]["labels"]["chaos.openshift.io/test"] = "some-other-test"
+        status, _ = self.execute()
+        self.assertFailed(status)
+
     def test_accepts_disposable_label_carried_only_by_the_vm(self):
         self.vmi["metadata"]["labels"] = {}
         self.k8s_client.get_vm.return_value = {
@@ -233,6 +245,7 @@ class TestWindowsGuestCrashScenarioPlugin(unittest.TestCase):
                 "labels": {
                     "chaos.openshift.io/target": "windows",
                     "chaos.openshift.io/disposable": "true",
+                    "chaos.openshift.io/test": "windows-guest-crash",
                 }
             }
         }
